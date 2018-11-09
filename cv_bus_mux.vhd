@@ -60,6 +60,7 @@ entity cv_bus_mux is
     cart_en_e0_n_i  : in  std_logic;
     bios_rom_d_i    : in  std_logic_vector(7 downto 0);
     cpu_ram_d_i     : in  std_logic_vector(7 downto 0);
+    sgm_ram_d_i     : in  std_logic_vector(7 downto 0);
     vdp_d_i         : in  std_logic_vector(7 downto 0);
     ctrl_d_i        : in  std_logic_vector(7 downto 0);
     cart_d_i        : in  std_logic_vector(7 downto 0);

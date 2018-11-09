@@ -43,6 +43,20 @@ package cv_comp_pack is
     );
   end component;
 
+  component cv_sgm is
+    port (
+      clk_i           : in  std_logic;
+      clk_en_3m58_i   : in  std_logic;
+      reset_n_i       : in  std_logic;
+      sgm_ac_ram_n_i  : in  std_logic;
+      sgm_ac_bios_n_i : in  std_logic;
+      a_i             : in  std_logic_vector(6 downto 0);
+      d_i             : in  std_logic_vector(7 downto 0);
+      sgm_en_ram_n_o  : out std_logic;
+      sgm_en_bios_n_o : out std_logic
+    );
+  end component;
+
   component cv_addr_dec
     port (
       a_i             : in  std_logic_vector(15 downto 0);
@@ -62,7 +76,13 @@ package cv_comp_pack is
       cart_en_80_n_o  : out std_logic;
       cart_en_a0_n_o  : out std_logic;
       cart_en_c0_n_o  : out std_logic;
-      cart_en_e0_n_o  : out std_logic
+      cart_en_e0_n_o  : out std_logic;
+      ay8910_la_n_o   : out std_logic;
+      ay8910_w_n_o    : out std_logic;
+      ay8910_r_n_o    : out std_logic;
+      sgm_ac_ram_n_o  : out std_logic;
+      sgm_ac_bios_n_o : out std_logic;
+      sgm_ram_ce_n_o  : out std_logic
     );
   end component;
 
@@ -78,6 +98,7 @@ package cv_comp_pack is
       cart_en_e0_n_i  : in  std_logic;
       bios_rom_d_i    : in  std_logic_vector(7 downto 0);
       cpu_ram_d_i     : in  std_logic_vector(7 downto 0);
+      sgm_ram_d_i     : in  std_logic_vector(7 downto 0);
       vdp_d_i         : in  std_logic_vector(7 downto 0);
       ctrl_d_i        : in  std_logic_vector(7 downto 0);
       cart_d_i        : in  std_logic_vector(7 downto 0);

@@ -67,7 +67,13 @@ entity cv_addr_dec is
     cart_en_80_n_o  : out std_logic;
     cart_en_a0_n_o  : out std_logic;
     cart_en_c0_n_o  : out std_logic;
-    cart_en_e0_n_o  : out std_logic
+    cart_en_e0_n_o  : out std_logic;
+    ay8910_la_n_o   : out std_logic;
+    ay8910_w_n_o    : out std_logic;
+    ay8910_r_n_o    : out std_logic;
+    sgm_ac_ram_n_o  : out std_logic;
+    sgm_ac_bios_n_o : out std_logic;
+    sgm_ram_ce_n_o  : out std_logic
   );
 
 end cv_addr_dec;
@@ -103,14 +109,25 @@ begin
     cart_en_a0_n_o  <= '1';
     cart_en_c0_n_o  <= '1';
     cart_en_e0_n_o  <= '1';
+    ay8910_la_n_o   <= '1';
+    ay8910_w_n_o    <= '1'; 
+    ay8910_r_n_o    <= '1'; 
+    sgm_ac_ram_n_o  <= '1'; 
+    sgm_ac_bios_n_o <= '1'; 
+    sgm_ram_ce_n_o  <= '1';
 
     -- Memory access ----------------------------------------------------------
     if mreq_n_i = '0' and rfsh_n_i = '1' then
       case a_i(15 downto 13) is
-        when "000" =>
+        when "000" => -- 0x0000 - 0x1FFF
           bios_rom_ce_n_o   <= '0';
-        when "011" =>
+        when "001" => -- 0x2000 - 0x3FFF
+          sgm_ram_ce_n_o    <= '0';
+        when "010" => -- 0x4000 - 0x5FFF
+          sgm_ram_ce_n_o    <= '0';
+        when "011" => -- 0x6000 - 0x7FFF
           ram_ce_n_o        <= '0';
+          sgm_ram_ce_n_o    <= '0';
         when "100" =>
           cart_en_80_n_o    <= '0';
         when "101" =>
@@ -145,6 +162,30 @@ begin
             if rd_n_i = '0' then
               ctrl_r_n_o    <= '0';
             end if;
+          when others =>
+            null;
+        end case;
+      end if;
+      -- Super Game Module IO ports
+      if a_i(7) = '0' then
+        case a_i(6 downto 0) & wr_n_i is
+          -- 0x50 (AY8910 latch)
+          when "10100000" =>
+            ay8910_la_n_o <= '0';
+          -- 0x51 (AY8910 Write)
+          when "10100010" =>
+            ay8910_w_n_o <= '0';
+          -- 0x52 (AY8910 Read)
+          when "10100101" =>
+            if rd_n_i = '0' then
+              ay8910_r_n_o <= '0';
+            end if;
+          -- 0x53 (enable SGM ram) (0x2000-0x7FFF)
+          when "10100110" =>
+            sgm_ac_ram_n_o <= '0';
+          -- 0x7F (SGM ram in BIOS area)
+          when "11111110" =>
+            sgm_ac_bios_n_o <= '0';
           when others =>
             null;
         end case;

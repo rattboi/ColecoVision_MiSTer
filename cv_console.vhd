@@ -91,6 +91,18 @@ entity cv_console is
     cpu_ram_we_n_o  : out std_logic;
     cpu_ram_d_i     : in  std_logic_vector( 7 downto 0);
     cpu_ram_d_o     : out std_logic_vector( 7 downto 0);
+    -- SGM RAM Interface ------------------------------------------------------
+    sgm_ram_a_o     : out std_logic_vector( 14 downto 0);
+    sgm_ram_ce_n_o  : out std_logic;
+    sgm_ram_we_n_o  : out std_logic;
+    sgm_ram_d_i     : in  std_logic_vector( 7 downto 0);
+    sgm_ram_d_o     : out std_logic_vector( 7 downto 0);
+    -- SGM BIOS RAM Overlay Interface ------------------------------------------------------
+    sgm_bios_ram_a_o     : out std_logic_vector( 14 downto 0);
+    sgm_bios_ram_ce_n_o  : out std_logic;
+    sgm_bios_ram_we_n_o  : out std_logic;
+    sgm_bios_ram_d_i     : in  std_logic_vector( 7 downto 0);
+    sgm_bios_ram_d_o     : out std_logic_vector( 7 downto 0);
     -- Video RAM Interface ----------------------------------------------------
     vram_a_o        : out std_logic_vector(13 downto 0);
     vram_we_o       : out std_logic;
@@ -128,6 +140,7 @@ use std.textio.all;
 use work.tech_comp_pack.cv_por;
 use work.cv_comp_pack.cv_clock;
 use work.cv_comp_pack.cv_ctrl;
+use work.cv_comp_pack.cv_sgm;
 use work.cv_comp_pack.cv_addr_dec;
 use work.cv_comp_pack.cv_bus_mux;
 use work.vdp18_core_comp_pack.vdp18_core;
@@ -202,7 +215,14 @@ architecture struct of cv_console is
          cart_en_a0_n_s,
          cart_en_c0_n_s,
          cart_en_e0_n_s   : std_logic;
-
+  signal ay8910_la_n_s,
+         ay8910_w_n_s,
+         ay8910_r_n_s,
+         sgm_ac_ram_n_s,
+         sgm_ac_bios_n_s  : std_logic;
+  signal sgm_en_ram_n_s,
+         sgm_en_bios_n_s  : std_logic;
+  signal sgm_ram_ce_n_s   : std_logic;
   -- misc signals
   signal vdd_s            : std_logic;
 
@@ -366,6 +386,21 @@ begin
       d_o             => d_from_ctrl_s
     );
 
+  -----------------------------------------------------------------------------
+  -- Super Game Module
+  -----------------------------------------------------------------------------
+  sgm_b : cv_sgm
+    port map (
+      clk_i           => clk_i,
+      clk_en_3m58_i   => clk_en_3m58_s,
+      reset_n_i       => reset_n_s,
+      sgm_ac_ram_n_i  => sgm_ac_ram_n_s,
+      sgm_ac_bios_n_i => sgm_ac_bios_n_s,
+      a_i             => a_s(6 downto 0),
+      d_i             => d_from_cpu_s,
+      sgm_en_ram_n_o  => sgm_en_ram_n_s,
+      sgm_en_bios_n_o => sgm_en_bios_n_s
+    );
 
   -----------------------------------------------------------------------------
   -- Address decoder
@@ -389,17 +424,26 @@ begin
       cart_en_80_n_o  => cart_en_80_n_s,
       cart_en_a0_n_o  => cart_en_a0_n_s,
       cart_en_c0_n_o  => cart_en_c0_n_s,
-      cart_en_e0_n_o  => cart_en_e0_n_s
+      cart_en_e0_n_o  => cart_en_e0_n_s,
+      ay8910_la_n_o   => ay8910_la_n_s,
+      ay8910_w_n_o    => ay8910_w_n_s,
+      ay8910_r_n_o    => ay8910_r_n_s,
+      sgm_ac_ram_n_o  => sgm_ac_ram_n_s,
+      sgm_ac_bios_n_o => sgm_ac_bios_n_s,
+      sgm_ram_ce_n_o  => sgm_ram_ce_n_s
     );
 
-  bios_rom_ce_n_o <= bios_rom_ce_n_s;
-  cpu_ram_ce_n_o  <= ram_ce_n_s;
-  cpu_ram_we_n_o  <= wr_n_s;
+  bios_rom_ce_n_o <= bios_rom_ce_n_s or not sgm_en_bios_n_s;
+  sgm_bios_ram_ce_n_o  <= bios_rom_ce_n_s or sgm_en_bios_n_s;
+  sgm_bios_ram_we_n_o  <= sgm_en_bios_n_s or wr_n_s;
+  cpu_ram_ce_n_o  <= ram_ce_n_s or not sgm_en_ram_n_s;
+  sgm_ram_ce_n_o  <= sgm_ram_ce_n_s or sgm_en_ram_n_s;
+  cpu_ram_we_n_o  <= wr_n_s or not sgm_en_ram_n_s;
+  sgm_ram_we_n_o  <= wr_n_s or sgm_en_ram_n_s;
   cart_en_80_n_o  <= cart_en_80_n_s;
   cart_en_a0_n_o  <= cart_en_a0_n_s;
   cart_en_c0_n_o  <= cart_en_c0_n_s;
   cart_en_e0_n_o  <= cart_en_e0_n_s;
-
 
   -----------------------------------------------------------------------------
   -- Bus multiplexer
@@ -416,6 +460,7 @@ begin
       cart_en_e0_n_i  => cart_en_e0_n_s,
       bios_rom_d_i    => bios_rom_d_i,
       cpu_ram_d_i     => cpu_ram_d_i,
+      sgm_ram_d_i     => sgm_ram_d_i,
       vdp_d_i         => d_from_vdp_s,
       ctrl_d_i        => d_from_ctrl_s,
       cart_d_i        => cart_d_i,
@@ -429,6 +474,8 @@ begin
   bios_rom_a_o <= a_s(12 downto 0);
   cpu_ram_a_o  <= a_s( 9 downto 0);
   cpu_ram_d_o  <= d_from_cpu_s;
+  sgm_ram_a_o  <= a_s(14 downto 0);
+  sgm_ram_d_o  <= d_from_cpu_s;
   cart_a_o     <= a_s(14 downto 0);
 
 

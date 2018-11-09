@@ -218,6 +218,34 @@ spram #(10) ram
 	.q(ram_di)
 );
 
+wire  [11:0] sgm_bios_ram_a;
+wire        sgm_bios_ram_we_n, sgm_bios_ram_ce_n;
+wire  [7:0] sgm_bios_ram_di;
+wire  [7:0] sgm_bios_ram_do;
+
+spram #(15) sgm_bios_ram
+(
+	.clock(clk_sys),
+	.address(sgm_bios_ram_a),
+	.wren(ce_10m7 & ~(sgm_bios_ram_we_n | sgm_bios_ram_ce_n)),
+	.data(sgm_bios_ram_do),
+	.q(sgm_bios_ram_di)
+);
+
+wire  [14:0] sgm_ram_a;
+wire        sgm_ram_we_n, sgm_ram_ce_n;
+wire  [7:0] sgm_ram_di;
+wire  [7:0] sgm_ram_do;
+
+spram #(15) sgm_ram
+(
+	.clock(clk_sys),
+	.address(sgm_ram_a),
+	.wren(ce_10m7 & ~(sgm_ram_we_n | sgm_ram_ce_n)),
+	.data(sgm_ram_do),
+	.q(sgm_ram_di)
+);
+
 wire [13:0] vram_a;
 wire        vram_we;
 wire  [7:0] vram_di;
@@ -296,6 +324,18 @@ cv_console console
 	.cpu_ram_ce_n_o(ram_ce_n),
 	.cpu_ram_d_i(ram_di),
 	.cpu_ram_d_o(ram_do),
+
+  .sgm_ram_a_o(sgm_ram_a),
+	.sgm_ram_we_n_o(sgm_ram_we_n),
+	.sgm_ram_ce_n_o(sgm_ram_ce_n),
+	.sgm_ram_d_i(sgm_ram_di),
+	.sgm_ram_d_o(sgm_ram_do),
+
+  .sgm_bios_ram_a_o(sgm_bios_ram_a),
+	.sgm_bios_ram_we_n_o(sgm_bios_ram_we_n),
+	.sgm_bios_ram_ce_n_o(sgm_bios_ram_ce_n),
+	.sgm_bios_ram_d_i(sgm_bios_ram_di),
+	.sgm_bios_ram_d_o(sgm_bios_ram_do),
 
 	.vram_a_o(vram_a),
 	.vram_we_o(vram_we),
